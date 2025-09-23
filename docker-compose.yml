@@ -1,33 +1,50 @@
-services:
-  nocobase:
-    image: nocobase/nocobase:latest
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    environment:
-      NOCOBASE_ENV: production
-      DB_DIALECT: postgres
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: nocobase
-      DB_USER: nocobase
-      DB_PASSWORD: ChangeMe
-      ADMIN_EMAIL: admin@dorbenabu.com
-      ADMIN_PASSWORD: ChangeMe123
-    ports:
-      - "13000:13000"
-    volumes:
-      - storage:/app/storage
+version: "3.9"
 
+services:
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: nocobase
-      POSTGRES_USER: nocobase
-      POSTGRES_PASSWORD: ChangeMe
+      POSTGRES_DB: ${DB_DATABASE:-nocobase}
+      POSTGRES_USER: ${DB_USER:-nocobase}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ChangeMe}
     volumes:
       - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nocobase} -d ${DB_DATABASE:-nocobase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nocobase:
+    image: nocobase/nocobase:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-13000}:13000"
+    environment:
+      # סביבת NocoBase
+      NOCOBASE_ENV: ${NOCOBASE_ENV:-production}
+
+      # חיבור למסד (לא נוגעים בשרת עצמו, רק בפרטים לקליינט)
+      DB_DIALECT: ${DB_DIALECT:-postgres}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:-nocobase}
+      DB_USER: ${DB_USER:-nocobase}
+      DB_PASSWORD: ${DB_PASSWORD:-ChangeMe}
+
+      # יוזר אדמין ל־bootstrap ראשוני בלבד
+      ADMIN_EMAIL: ${INIT_ROOT_EMAIL:-admin@nocobase.com}
+      ADMIN_PASSWORD: ${INIT_ROOT_PASSWORD:-admin123}
+
+      # לוגים בתוך ה-storage המתמשך
+      LOGGER_BASE_PATH: ${LOGGER_BASE_PATH:-storage/logs}
+
+    volumes:
+      - storage:/app/storage
 
 volumes:
   db:

@@ -17,7 +17,7 @@ services:
     ports:
       - "13000:13000"
     volumes:
-      - storage:/app/storage
+      - /var/lib/nocobase/storage:/app/storage
 
   postgres:
     image: postgres:15-alpine
@@ -31,5 +31,3 @@ services:
 
 volumes:
   db:
-  storage:
-    name: nocobase_storage

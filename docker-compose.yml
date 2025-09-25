@@ -2,8 +2,7 @@ services:
   nocobase:
     image: nocobase/nocobase:latest
     restart: unless-stopped
-    depends_on:
-      - postgres
+    depends_on: [postgres]
     environment:
       NOCOBASE_ENV: production
       DB_DIALECT: postgres
@@ -16,8 +15,8 @@ services:
       ADMIN_PASSWORD: ChangeMe123
     ports:
       - "13000:13000"
-
     volumes:
+      # שני מיפויים לאותה תיקיית Host – עוקף צורך ב-symlink:
       - /var/lib/nocobase/uploads:/app/storage/uploads
       - /var/lib/nocobase/uploads:/app/storage/public/uploads
 

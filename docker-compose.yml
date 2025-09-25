@@ -16,8 +16,10 @@ services:
       ADMIN_PASSWORD: ChangeMe123
     ports:
       - "13000:13000"
+
     volumes:
-      - /var/lib/nocobase/storage:/app/storage
+      - /var/lib/nocobase/uploads:/app/storage/uploads
+      - /var/lib/nocobase/uploads:/app/storage/public/uploads
 
   postgres:
     image: postgres:15-alpine

@@ -1,8 +1,26 @@
+version: "3.9"
+
 services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nocobase
+      POSTGRES_USER: nocobase
+      POSTGRES_PASSWORD: ChangeMe
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nocobase -d nocobase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   nocobase:
     image: nocobase/nocobase:latest
     restart: unless-stopped
-    depends_on: [postgres]
+    depends_on:
+      - postgres
     environment:
       NOCOBASE_ENV: production
       DB_DIALECT: postgres
@@ -15,20 +33,9 @@ services:
       ADMIN_PASSWORD: ChangeMe123
     ports:
       - "13000:13000"
+    # 👇 פרסיסטנס קשיח: מיפוי יחיד לכל storage (עוקף בעיות אחרי Redeploy)
     volumes:
-      # שני מיפויים לאותה תיקיית Host – עוקף צורך ב-symlink:
-      - /var/lib/nocobase/uploads:/app/storage/uploads
-      - /var/lib/nocobase/uploads:/app/storage/public/uploads
-
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: nocobase
-      POSTGRES_USER: nocobase
-      POSTGRES_PASSWORD: ChangeMe
-    volumes:
-      - db:/var/lib/postgresql/data
+      - /var/lib/nocobase/storage:/app/storage
 
 volumes:
   db:

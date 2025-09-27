@@ -18,7 +18,8 @@ services:
     image: nocobase/nocobase:latest
     restart: unless-stopped
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       NOCOBASE_ENV: production
       DB_DIALECT: postgres
@@ -31,9 +32,10 @@ services:
       ADMIN_PASSWORD: ChangeMe123
     ports:
       - "13000:13000"
-    # 👇 פרסיסטנס קשיח: מיפוי יחיד לכל storage (עוקף בעיות אחרי Redeploy)
+    # Persistence without any scripts/symlinks:
     volumes:
-      - /var/lib/nocobase/storage:/app/storage
+      - /var/lib/nocobase/uploads:/app/storage/uploads
+      - /var/lib/nocobase/uploads:/app/storage/public/uploads
 
 volumes:
   db:

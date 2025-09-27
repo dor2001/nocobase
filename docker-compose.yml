@@ -27,7 +27,7 @@ services:
     ports:
       - "13000:13000"
     volumes:
-      - nocobase_storage:/app/storage
+      - nocobase_storage:/app/nocobase/storage
 
 volumes:
   nocobase_storage:

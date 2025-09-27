@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: nocobase
       POSTGRES_PASSWORD: ChangeMe
     volumes:
-      - nocobase_db:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
 
   nocobase:
     image: nocobase/nocobase:latest
@@ -30,5 +30,10 @@ services:
       - nocobase_storage:/app/nocobase/storage
 
 volumes:
+  # Use your EXISTING Postgres volume so old data returns:
+  pgdata:
+    external: true
+    name: bc0k4w0go0cgk0kg40gsg4wg_db
+
+  # Fresh named volume for NocoBase file storage (uploads + public):
   nocobase_storage:
-  nocobase_db:

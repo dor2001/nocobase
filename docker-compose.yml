@@ -65,8 +65,6 @@ services:
   adminer:
     image: adminer:4
     restart: unless-stopped
-    ports:
-      - "10111:8080"
     networks:
       - nocobase
 

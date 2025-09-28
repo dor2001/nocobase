@@ -1,34 +1,93 @@
-services:
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: nocobase
-      POSTGRES_USER: nocobase
-      POSTGRES_PASSWORD: ChangeMe
-    volumes:
-      - nocobase_db:/var/lib/postgresql/data
+version: "3.8"
 
+# NocoBase on Coolify / Docker Compose
+# - Uses the FULL image (includes DB clients + LibreOffice for PDF printing)
+# - Persists both the DB and the app storage
+# - Exposes NocoBase on port 13000 (map a domain in Coolify for HTTPS)
+
+networks:
   nocobase:
-    image: nocobase/nocobase:latest
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-full
     restart: unless-stopped
     depends_on:
       - postgres
     environment:
-      NOCOBASE_ENV: production
+      # ----- REQUIRED -----
+      # Generate a long random string (do NOT share it):
+      APP_KEY: ${APP_KEY}
+
+      # Initial super admin (only used on first boot)
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+      # ----- DATABASE -----
       DB_DIALECT: postgres
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: nocobase
-      DB_USER: nocobase
-      DB_PASSWORD: ChangeMe
-      ADMIN_EMAIL: admin@dorbenabu.com
-      ADMIN_PASSWORD: ChangeMe123
-    ports:
-      - "13000:13000"
+      DB_DATABASE: ${DB_NAME:-nocobase}
+      DB_USER: ${DB_USER:-nocobase}
+      DB_PASSWORD: ${DB_PASSWORD:-ChangeMe}
+
+      # ----- MISC -----
+      TZ: Asia/Jerusalem
+
+    # IMPORTANT: This is the correct storage path for recent NocoBase images
     volumes:
-      - nocobase_storage:/app/storage
+      - nocobase_storage:/app/nocobase/storage
+
+    # If you don't need a host port (using Coolify FQDN only), remove this block
+    ports:
+      - "13000:80"
+
+    networks:
+      - nocobase
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nocobase}
+      POSTGRES_USER: ${DB_USER:-nocobase}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ChangeMe}
+      TZ: Asia/Jerusalem
+    volumes:
+      - nocobase_db:/var/lib/postgresql/data
+    networks:
+      - nocobase
+
+  # Optional: lightweight DB UI (visit http://SERVER_IP:10101)
+  # Comment this block out if not needed or when using a domain-only setup in Coolify
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    ports:
+      - "10101:8080"
+    networks:
+      - nocobase
+
+# Optional: simple local backups of Postgres (daily). Uncomment to enable.
+#  pg-backup:
+#    image: prodrigestivill/postgres-backup-local:latest
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_HOST: postgres
+#      POSTGRES_DB: ${DB_NAME:-nocobase}
+#      POSTGRES_USER: ${DB_USER:-nocobase}
+#      POSTGRES_PASSWORD: ${DB_PASSWORD:-ChangeMe}
+#      SCHEDULE: "0 3 * * *"   # daily at 03:00
+#      BACKUP_DIR: /backups
+#      TZ: Asia/Jerusalem
+#    volumes:
+#      - nocobase_backups:/backups
+#    networks:
+#      - nocobase
 
 volumes:
   nocobase_storage:
   nocobase_db:
+  # nocobase_backups:  # only if pg-backup is enabled
